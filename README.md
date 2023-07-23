@@ -39,7 +39,28 @@ Programming languages and other tools can be configured through
 `./configs/languages.json` file. The file is read on each run.
 Here's an example of the file:
 ```json
-
+[
+    {
+        "id": "python3.10",
+        "full_name": "Python 3.10",
+        "code_filename": "main.py",
+        "compile_cmd": null,
+        "execute_cmd": "python3.10 main.py",
+        "env_version_cmd": "python3.10 --version",
+        "hello_world_code": "print(\"Hello, World!\")",
+        "monaco_id": "python"
+    },
+    {
+        "id": "cpp17",
+        "full_name": "C++17 (GNU G++)",
+        "code_filename": "main.cpp",
+        "compile_cmd": "g++ -std=c++17 -o main main.cpp",
+        "execute_cmd": "./main",
+        "env_version_cmd": "g++ --version",
+        "hello_world_code": "#include <iostream>\nint main() { std::cout << \"Hello, World!\"; }",
+        "monaco_id": "cpp"
+    }
+]
 ```
 
 When in production and receiving jobs from RabbitMQ the
