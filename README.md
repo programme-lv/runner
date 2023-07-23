@@ -14,12 +14,12 @@ See [tester](https://github.com/programme-lv/tester).
 
 When in root of the repository, run:
 ```bash
-./cmd/runner/runner [options] file
+go run ./cmd/runner [options] file
 ```
 
 For example:
 ```bash
-./cmd/runner/runner \
+go run ./cmd/runner \
     --time 1 \
     --mem 256 \
     --lang go \
