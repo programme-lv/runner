@@ -2,7 +2,6 @@ package isolate
 
 import (
 	"io"
-	"os/exec"
 )
 
 type IsolateBox struct {
@@ -33,13 +32,13 @@ func (box *IsolateBox) Close() error {
 
 func (box *IsolateBox) Run(
 	command string,
-	stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser,
-	constraints *RuntimeConstraints) (cmd *exec.Cmd, err error) {
+	stdin io.ReadCloser,
+	constraints *RuntimeConstraints) (*IsolateProcess, error) {
 
 	if constraints == nil {
 		c := DefaultRuntimeConstraints()
 		constraints = &c
 	}
 
-	return box.isolate.RunCommand(box.id, command, stdin, stdout, stderr, *constraints)
+	return box.isolate.StartCommand(box.id, command, stdin, *constraints)
 }

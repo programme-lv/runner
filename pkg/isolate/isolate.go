@@ -5,6 +5,7 @@ import (
 	"io"
 	"log"
 	"os/exec"
+	"strings"
 	"sync"
 
 	"golang.org/x/exp/slog"
@@ -93,19 +94,26 @@ func (isolate *Isolate) EraseBox(boxId int) error {
 	return nil
 }
 
-func (isolate *Isolate) RunCommand(
-	boxId int, command string,
-	stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser,
-	constraints RuntimeConstraints) (cmd *exec.Cmd, err error) {
+func (isolate *Isolate) StartCommand(
+	boxId int, command string, stdin io.ReadCloser,
+	constraints RuntimeConstraints) (process *IsolateProcess, err error) {
 
-	runCmdStr := fmt.Sprintf("isolate --box-id %d --run %s",
+	runCmdStr := fmt.Sprintf("isolate --box-id %d %s --run %s",
 		boxId,
+        strings.Join(constraints.ToArgs(), " "),
 		command)
 
-	cmd = exec.Command("/usr/bin/bash", "-c", runCmdStr)
-	cmd.Stdin = stdin
-	cmd.Stdout = stdout
-	cmd.Stderr = stderr
+    cmd := exec.Command("/usr/bin/bash", "-c", runCmdStr)
+    cmd.Stdin = stdin
+    process.stdout, err = cmd.StdoutPipe()
+    if err != nil {
+        return
+    }
+    process.stderr, err = cmd.StderrPipe()
+    if err != nil {
+        return
+    }
+    process.cmd = cmd
 
 	if err = cmd.Start(); err != nil {
 		return
