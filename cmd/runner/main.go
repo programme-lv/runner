@@ -97,4 +97,7 @@ func main() {
     box, err := isolate.NewBox()
     box.Id()
     slog.Info("created box", slog.Int("id", box.Id()))
+
+    // place the code file in the box
+
 }

@@ -2,6 +2,8 @@ package isolate
 
 import (
 	"io"
+	"os"
+	"path/filepath"
 )
 
 type IsolateBox struct {
@@ -41,4 +43,17 @@ func (box *IsolateBox) Run(
 	}
 
 	return box.isolate.StartCommand(box.id, command, stdin, *constraints)
+}
+
+func (box *IsolateBox) AddFile(path string, content []byte) error {
+    path = filepath.Join(box.path, path)
+    _, err := os.Create(path)
+    if err != nil {
+        return err
+    }
+    err = os.WriteFile(path, content, 0644)
+    if err != nil {
+        return err
+    }
+    return nil
 }

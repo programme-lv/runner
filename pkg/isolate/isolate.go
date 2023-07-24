@@ -3,7 +3,6 @@ package isolate
 import (
 	"fmt"
 	"io"
-	"log"
 	"os/exec"
 	"strings"
 	"sync"
@@ -83,14 +82,19 @@ func (isolate *Isolate) NewBox() (*IsolateBox, error) {
 func (isolate *Isolate) EraseBox(boxId int) error {
 	isolate.mutex.Lock()
 	defer isolate.mutex.Unlock()
+    logger := slog.With(slog.Int("box-id", boxId))
 
 	cleanCmdStr := fmt.Sprintf("isolate --cleanup --box-id %d", boxId)
-	cleanCmd := exec.Command("/usr/bin/bash", "-c", cleanCmdStr)
+	logger = logger.With(slog.String("cmd", cleanCmdStr))
+	
+    cleanCmd := exec.Command("/usr/bin/bash", "-c", cleanCmdStr)
 	cleanOut, err := cleanCmd.CombinedOutput()
+    
+    logger = logger.With(slog.String("output", string(cleanOut)))
+    logger.Info("erased isolate box")
 	if err != nil {
 		return err
 	}
-	log.Println(string(cleanOut))
 	return nil
 }
 
@@ -102,6 +106,9 @@ func (isolate *Isolate) StartCommand(
 		boxId,
         strings.Join(constraints.ToArgs(), " "),
 		command)
+
+    logger := slog.With(slog.Int("box-id", boxId),
+                        slog.String("cmd", runCmdStr))
 
     cmd := exec.Command("/usr/bin/bash", "-c", runCmdStr)
     cmd.Stdin = stdin
@@ -118,6 +125,8 @@ func (isolate *Isolate) StartCommand(
 	if err = cmd.Start(); err != nil {
 		return
 	}
+
+    logger.Info("started isolate command")
 
 	return
 }
