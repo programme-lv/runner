@@ -3,15 +3,12 @@ package main
 import (
 	"flag"
 	"fmt"
-	"io"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/lmittmann/tint"
 	"github.com/programme-lv/runner/internal/languages"
-	"github.com/programme-lv/runner/pkg/isolate"
 	"golang.org/x/exp/slog"
 )
 
@@ -102,54 +99,7 @@ func main() {
 	}
 
 	slog.Info("found language", slog.String("language", fmt.Sprintf("%+v", language)))
-
-	isolate, err := isolate.NewIsolate()
-	if err != nil {
-		slog.Error("failed to create isolate class", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
-
-	box, err := isolate.NewBox()
-	box.Id()
-	slog.Info("created box", slog.Int("id", box.Id()))
-
-	// place the code file in the box
-	err = box.AddFile(language.CodeFilename, []byte(args.Code))
-	if err != nil {
-		slog.Error("failed to add code file to box", slog.String("error", err.Error()))
-		os.Exit(1)
-	}
-
-	if language.CompileCmd != nil {
-        slog.Info("compiling code")
-		stdin := io.NopCloser(strings.NewReader(args.Stdin))
-		process, err := box.Run(*language.CompileCmd, stdin, nil)
-		if err != nil {
-			slog.Error("failed to compile code", slog.String("error", err.Error()))
-			os.Exit(1)
-		}
-        process.LogOutput()
-        err = process.Wait()
-        if err != nil {
-            slog.Error("failed to compile code", slog.String("error", err.Error()))
-            os.Exit(1)
-        }
-	}
-
-    slog.Info("running code")
-
-    stdin := io.NopCloser(strings.NewReader(args.Stdin))
-    process, err := box.Run(language.ExecuteCmd, stdin, nil)
-    if err != nil {
-        slog.Error("failed to run code", slog.String("error", err.Error()))
-        os.Exit(1)
-    }
-    process.LogOutput()
-    err = process.Wait()
-    if err != nil {
-        slog.Error("failed to run code", slog.String("error", err.Error()))
-        os.Exit(1)
-    }
+	
 }
 
 func readFile(path string) []byte {
