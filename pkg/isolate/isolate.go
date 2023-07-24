@@ -101,7 +101,10 @@ func (isolate *Isolate) EraseBox(boxId int) error {
 
 func (isolate *Isolate) StartCommand(
 	boxId int, command string, stdin io.ReadCloser,
-	constraints RuntimeConstraints) (process *IsolateProcess, err error) {
+	constraints RuntimeConstraints) (*IsolateProcess,error) {
+
+    var process *IsolateProcess = &IsolateProcess{}
+    var err error
 
 	runCmdStr := fmt.Sprintf("isolate --box-id %d %s --run %s",
 		boxId,
@@ -115,19 +118,19 @@ func (isolate *Isolate) StartCommand(
     cmd.Stdin = stdin
     process.stdout, err = cmd.StdoutPipe()
     if err != nil {
-        return
+        return process, err
     }
     process.stderr, err = cmd.StderrPipe()
     if err != nil {
-        return
+        return process, err
     }
     process.cmd = cmd
 
 	if err = cmd.Start(); err != nil {
-		return
+		return process, err
 	}
 
     logger.Info("started isolate command")
 
-	return
+	return process, err
 }

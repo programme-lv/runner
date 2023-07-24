@@ -4,6 +4,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"golang.org/x/exp/slog"
 )
@@ -20,7 +21,7 @@ func NewIsolateBox(isolate *Isolate, id int, path string) *IsolateBox {
 		id:      id,
 		path:    path,
 		isolate: isolate,
-        logger:  slog.With(slog.Int("box-id", id), slog.String("box-path", path)),
+		logger:  slog.With(slog.Int("box-id", id), slog.String("box-path", path)),
 	}
 }
 
@@ -40,17 +41,18 @@ func (box *IsolateBox) Run(
 	command string,
 	stdin io.ReadCloser,
 	constraints *RuntimeConstraints) (*IsolateProcess, error) {
-
 	if constraints == nil {
 		c := DefaultRuntimeConstraints()
 		constraints = &c
 	}
+	box.logger.Info("running command in box", slog.String("command", command),
+		slog.String("constraints", strings.Join(constraints.ToArgs(), " ")))
 
 	return box.isolate.StartCommand(box.id, command, stdin, *constraints)
 }
 
 func (box *IsolateBox) AddFile(path string, content []byte) error {
-    box.logger.Info("adding file to box", slog.String("file-path", path))
+	box.logger.Info("adding file to box", slog.String("file-path", path))
 	path = filepath.Join(box.path, "box", path)
 	_, err := os.Create(path)
 	if err != nil {
@@ -60,6 +62,6 @@ func (box *IsolateBox) AddFile(path string, content []byte) error {
 	if err != nil {
 		return err
 	}
-    box.logger.Info("added file to box", slog.String("file-path", path))
+	box.logger.Info("added file to box", slog.String("file-path", path))
 	return nil
 }

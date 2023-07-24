@@ -3,8 +3,10 @@ package main
 import (
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/lmittmann/tint"
@@ -67,7 +69,7 @@ func main() {
 		}),
 	))
 
-	slog.Info("received arguments",
+	slog.Info("using arguments",
 		slog.Float64("time limit", args.TimeLim),
 		slog.Int("memory limit", args.MemLim),
 		slog.String("language", args.Lang),
@@ -118,6 +120,16 @@ func main() {
 		slog.Error("failed to add code file to box", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
+
+    if language.CompileCmd != nil {
+        stdin := io.NopCloser(strings.NewReader(args.Stdin))
+        process, err := box.Run(*language.CompileCmd, stdin, nil)
+        if err != nil {
+            slog.Error("failed to compile code", slog.String("error", err.Error()))
+            os.Exit(1)
+        }
+        process.Wait()
+    }
 }
 
 func readFile(path string) []byte {

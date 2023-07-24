@@ -21,3 +21,12 @@ func (process *IsolateProcess) Wait() (*IsolateResult, error) {
     }
     return nil, nil
 }
+
+func (process *IsolateProcess) Stdout() io.ReadCloser {
+    return process.stdout
+}
+
+func (process *IsolateProcess) Stderr() io.ReadCloser {
+    return process.stderr
+}
+
