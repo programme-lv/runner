@@ -50,7 +50,7 @@ func (isolate *Isolate) NewBox() (*IsolateBox, error) {
 
 	logger := slog.With(slog.Int("box-id", boxId))
 
-	cleanCmdStr := fmt.Sprintf("isolate --cleanup --box-id %d", boxId)
+	cleanCmdStr := fmt.Sprintf("isolate --cg --cleanup --box-id %d", boxId)
 	logger = logger.With(slog.String("cmd", cleanCmdStr))
 
 	cleanCmd := exec.Command("/usr/bin/bash", "-c", cleanCmdStr)
@@ -61,7 +61,7 @@ func (isolate *Isolate) NewBox() (*IsolateBox, error) {
 
 	logger.Info("ran isolate cleanup command", slog.String("output", string(cleanOut)))
 
-	initCmdStr := fmt.Sprintf("isolate --init --box-id %d", boxId)
+	initCmdStr := fmt.Sprintf("isolate --cg --init --box-id %d", boxId)
 	logger = logger.With(slog.String("cmd", initCmdStr))
 
 	initCmd := exec.Command("/usr/bin/bash", "-c", initCmdStr)
@@ -85,7 +85,7 @@ func (isolate *Isolate) EraseBox(boxId int) error {
 	defer isolate.mutex.Unlock()
     logger := slog.With(slog.Int("box-id", boxId))
 
-	cleanCmdStr := fmt.Sprintf("isolate --cleanup --box-id %d", boxId)
+	cleanCmdStr := fmt.Sprintf("isolate --cg --cleanup --box-id %d", boxId)
 	logger = logger.With(slog.String("cmd", cleanCmdStr))
 	
     cleanCmd := exec.Command("/usr/bin/bash", "-c", cleanCmdStr)
@@ -106,9 +106,10 @@ func (isolate *Isolate) StartCommand(
     var process *IsolateProcess = &IsolateProcess{}
     var err error
 
-	runCmdStr := fmt.Sprintf("isolate --box-id %d %s --run %s",
+	runCmdStr := fmt.Sprintf("isolate --cg --box-id %d %s %s --run /usr/bin/env %s",
 		boxId,
         strings.Join(constraints.ToArgs(), " "),
+        "--env=HOME=/box",
 		command)
 
     logger := slog.With(slog.Int("box-id", boxId),

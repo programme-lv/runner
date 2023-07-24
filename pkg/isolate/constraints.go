@@ -10,14 +10,17 @@ type RuntimeConstraints struct {
     WallTimeLimInSec float64
     MemoryLimitInKB int
     MaxProcesses int
+    MaxOpenFiles int
 }
 
 func DefaultRuntimeConstraints() RuntimeConstraints {
     return RuntimeConstraints{
-        CpuTimeLimInSec: 1.0,
+        CpuTimeLimInSec: 2.0,
         ExtraCpuTimeLimInSec: 0.5,
         WallTimeLimInSec: 10.0,
-        MemoryLimitInKB: 256000,
+        MemoryLimitInKB: 2048000,
+        MaxProcesses: 128,
+        MaxOpenFiles: 128,
     }
 }
 
@@ -28,6 +31,7 @@ func (constraints *RuntimeConstraints) ToArgs() []string {
         constraints.ExtraCpuTimeLimArg(),
         constraints.WallTimeLimArg(),
         constraints.MaxProcessesArg(),
+        constraints.MaxOpenFilesArg(),
     }
 }
 
@@ -51,3 +55,6 @@ func (constraints *RuntimeConstraints) MaxProcessesArg() string {
     return fmt.Sprintf("--processes=%d", constraints.MaxProcesses)
 }
 
+func (constraints *RuntimeConstraints) MaxOpenFilesArg() string {
+    return fmt.Sprintf("--open-files=%d", constraints.MaxOpenFiles)
+}
