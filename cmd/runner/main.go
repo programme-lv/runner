@@ -34,12 +34,12 @@ func parseArguments() Args {
 	// read code file
 	var code string
 	if *codePathArg == "" {
-		slog.Error("No code file provided")
+		slog.Error("no code file provided")
 		os.Exit(1)
 	} else {
 		content, err := os.ReadFile(*codePathArg)
 		if err != nil {
-			slog.Error("Failed to read code file: %s", err)
+			slog.Error("failed to read code file: %s", err)
 			os.Exit(1)
 		}
 		code = string(content)
@@ -56,7 +56,7 @@ func parseArguments() Args {
 	if *stdinPathArg != "" {
 		content, err := os.ReadFile(*stdinPathArg)
 		if err != nil {
-			slog.Error("Failed to read stdin file: %s", err)
+			slog.Error("failed to read stdin file: %s", err)
 			os.Exit(1)
 		}
 		stdin = string(content)
@@ -81,17 +81,20 @@ func main() {
 		}),
 	))
 
-	slog.Info("Received arguments",
+	slog.Info("received arguments",
 		slog.Float64("time limit", args.TimeLim),
 		slog.Int("memory limit", args.MemLim),
 		slog.String("language", args.Lang),
 		slog.String("stdin", args.Stdin),
 		slog.String("code", args.Code))
 
-	_, err := isolate.NewIsolate()
+	isolate, err := isolate.NewIsolate()
 	if err != nil {
-		slog.Error("Failed to create isolate: %s", err)
+		slog.Error("failed to create isolate: %s", err)
 		os.Exit(1)
 	}
 
+    box, err := isolate.NewBox()
+    box.Id()
+    slog.Info("created box", slog.Int("id", box.Id()))
 }
