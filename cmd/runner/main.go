@@ -9,6 +9,7 @@ import (
 
 	"github.com/lmittmann/tint"
 	"github.com/programme-lv/runner/pkg/isolate"
+    "github.com/programme-lv/runner/internal/languages"
 	"golang.org/x/exp/slog"
 )
 
@@ -88,9 +89,19 @@ func main() {
 		slog.String("stdin", args.Stdin),
 		slog.String("code", args.Code))
 
+    var languageProvider languages.LanguageProvider
+    languageProvider = languages.NewJsonLanguageProvider("./configs/language.json")
+
+    var language languages.ProgrammingLanguage
+    language, err := languageProvider.GetLanguage(args.Lang)
+    if err != nil {
+        slog.Error("failed to get programming language", slog.String("error", err.Error()))
+        os.Exit(1)
+    }
+
 	isolate, err := isolate.NewIsolate()
 	if err != nil {
-		slog.Error("failed to create isolate: %s", err)
+		slog.Error("failed to create isolate class", slog.String("error", err.Error()))
 		os.Exit(1)
 	}
 
@@ -99,5 +110,9 @@ func main() {
     slog.Info("created box", slog.Int("id", box.Id()))
 
     // place the code file in the box
-
+    err = box.AddFile(language.CodeFilename, []byte(args.Code))
+    if err != nil {
+        slog.Error("failed to add code file to box", slog.String("error", err.Error()))
+        os.Exit(1)
+    }
 }
