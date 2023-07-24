@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -128,25 +127,7 @@ func main() {
 			slog.Error("failed to compile code", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
-        stdoutScanner := bufio.NewScanner(process.Stdout())
-        stderrScanner := bufio.NewScanner(process.Stderr())
-		done := make(chan bool)
-		go func() {
-			for stdoutScanner.Scan() {
-				fmt.Printf(stdoutScanner.Text())
-			}
-			done <- true
-		}()
-        go func() {
-            for stderrScanner.Scan() {
-                fmt.Printf(stderrScanner.Text())
-            }
-            done <- true
-        }()
-
-		<-done
-        <-done
-
+        process.LogOutput()
         err = process.Wait()
         if err != nil {
             slog.Error("failed to compile code", slog.String("error", err.Error()))
