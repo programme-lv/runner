@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"io"
@@ -39,22 +40,21 @@ func parseArguments() Args {
 		slog.Error("no code file provided")
 		os.Exit(1)
 	}
-    code := string(readFile(*codePathArg))
-    filename := filepath.Base(*codePathArg)
+	code := string(readFile(*codePathArg))
+	filename := filepath.Base(*codePathArg)
 
 	var stdin string
 	if *stdinPathArg != "" {
 		stdin = string(readFile(*stdinPathArg))
 	}
 
-
 	return Args{
-		TimeLim: float64(*timeLimitArg),
-		MemLim:  *memLimitArg,
-		Lang:    *langArg,
-		Stdin:   stdin,
-		Code:    code,
-        Filename: filename,
+		TimeLim:  float64(*timeLimitArg),
+		MemLim:   *memLimitArg,
+		Lang:     *langArg,
+		Stdin:    stdin,
+		Code:     code,
+		Filename: filename,
 	}
 }
 
@@ -77,32 +77,32 @@ func main() {
 		slog.String("code", args.Code))
 
 	var languageProvider languages.LanguageProvider
-    languageProvider, err := languages.NewJsonLanguageProvider("./configs/languages.json")
-    if err != nil {
-        slog.Error("failed to create language provider", slog.String("error", err.Error()))
-    }
+	languageProvider, err := languages.NewJsonLanguageProvider("./configs/languages.json")
+	if err != nil {
+		slog.Error("failed to create language provider", slog.String("error", err.Error()))
+	}
 
 	var language languages.ProgrammingLanguage
 	if args.Lang != "" {
-        var err error
+		var err error
 		language, err = languageProvider.GetLanguage(args.Lang)
 		if err != nil {
 			slog.Error("failed to get programming language", slog.String("error", err.Error()))
 			os.Exit(1)
 		}
 	} else if args.Filename != "" {
-        var err error
-        extension := filepath.Ext(args.Filename)
-        language, err = languageProvider.FindByFileExtension(extension)
-        if err != nil {
-            slog.Error("failed to get programming language", slog.String("error", err.Error()))
-            os.Exit(1)
-        }
-    } else {
-        slog.Error("no language provided")
-    }
+		var err error
+		extension := filepath.Ext(args.Filename)
+		language, err = languageProvider.FindByFileExtension(extension)
+		if err != nil {
+			slog.Error("failed to get programming language", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+	} else {
+		slog.Error("no language provided")
+	}
 
-    slog.Info("found language", slog.String("language", fmt.Sprintf("%+v", language)))
+	slog.Info("found language", slog.String("language", fmt.Sprintf("%+v", language)))
 
 	isolate, err := isolate.NewIsolate()
 	if err != nil {
@@ -121,15 +121,38 @@ func main() {
 		os.Exit(1)
 	}
 
-    if language.CompileCmd != nil {
-        stdin := io.NopCloser(strings.NewReader(args.Stdin))
-        process, err := box.Run(*language.CompileCmd, stdin, nil)
+	if language.CompileCmd != nil {
+		stdin := io.NopCloser(strings.NewReader(args.Stdin))
+		process, err := box.Run(*language.CompileCmd, stdin, nil)
+		if err != nil {
+			slog.Error("failed to compile code", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+        stdoutScanner := bufio.NewScanner(process.Stdout())
+        stderrScanner := bufio.NewScanner(process.Stderr())
+		done := make(chan bool)
+		go func() {
+			for stdoutScanner.Scan() {
+				fmt.Printf(stdoutScanner.Text())
+			}
+			done <- true
+		}()
+        go func() {
+            for stderrScanner.Scan() {
+                fmt.Printf(stderrScanner.Text())
+            }
+            done <- true
+        }()
+
+		<-done
+        <-done
+
+        err = process.Wait()
         if err != nil {
             slog.Error("failed to compile code", slog.String("error", err.Error()))
             os.Exit(1)
         }
-        process.Wait()
-    }
+	}
 }
 
 func readFile(path string) []byte {

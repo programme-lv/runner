@@ -14,12 +14,12 @@ type IsolateProcess struct {
     stderr io.ReadCloser
 }
 
-func (process *IsolateProcess) Wait() (*IsolateResult, error) {
+func (process *IsolateProcess) Wait() (error) {
     err := process.cmd.Wait()
     if err != nil {
-        return nil, err
+        return err
     }
-    return nil, nil
+    return nil
 }
 
 func (process *IsolateProcess) Stdout() io.ReadCloser {
