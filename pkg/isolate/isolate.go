@@ -74,6 +74,7 @@ func (isolate *Isolate) NewBox() (*IsolateBox, error) {
 	logger.Info("ran isolate init command", slog.String("output", initOutStr))
 
 	boxPath := initOutStr
+    boxPath = strings.TrimSuffix(boxPath, "\n")
 
 	isolate.idsInUse = append(isolate.idsInUse, boxId)
 	return NewIsolateBox(isolate, boxId, boxPath), nil

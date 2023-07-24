@@ -2,14 +2,14 @@ package main
 
 import (
 	"flag"
+	"fmt"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/lmittmann/tint"
+	"github.com/programme-lv/runner/internal/languages"
 	"github.com/programme-lv/runner/pkg/isolate"
-    "github.com/programme-lv/runner/internal/languages"
 	"golang.org/x/exp/slog"
 )
 
@@ -22,59 +22,44 @@ var (
 )
 
 type Args struct {
-	TimeLim float64
-	MemLim  int
-	Lang    string
-	Stdin   string
-	Code    string
+	TimeLim  float64
+	MemLim   int
+	Lang     string
+	Stdin    string
+	Code     string
+	Filename string
 }
 
 func parseArguments() Args {
 	flag.Parse()
 
-	// read code file
-	var code string
 	if *codePathArg == "" {
 		slog.Error("no code file provided")
 		os.Exit(1)
-	} else {
-		content, err := os.ReadFile(*codePathArg)
-		if err != nil {
-			slog.Error("failed to read code file: %s", err)
-			os.Exit(1)
-		}
-		code = string(content)
 	}
-
-	// guess programming language
-	var lang string
-	if *langArg == "" {
-		extension := filepath.Ext(*codePathArg)
-		lang = strings.TrimPrefix(extension, ".")
-	}
+    code := string(readFile(*codePathArg))
+    filename := filepath.Base(*codePathArg)
 
 	var stdin string
 	if *stdinPathArg != "" {
-		content, err := os.ReadFile(*stdinPathArg)
-		if err != nil {
-			slog.Error("failed to read stdin file: %s", err)
-			os.Exit(1)
-		}
-		stdin = string(content)
+		stdin = string(readFile(*stdinPathArg))
 	}
+
 
 	return Args{
 		TimeLim: float64(*timeLimitArg),
 		MemLim:  *memLimitArg,
-		Lang:    lang,
+		Lang:    *langArg,
 		Stdin:   stdin,
 		Code:    code,
+        Filename: filename,
 	}
 }
 
 func main() {
 	args := parseArguments()
 
+	// colorful logging
 	slog.SetDefault(slog.New(
 		tint.NewHandler(os.Stderr, &tint.Options{
 			Level:      slog.LevelDebug,
@@ -89,15 +74,33 @@ func main() {
 		slog.String("stdin", args.Stdin),
 		slog.String("code", args.Code))
 
-    var languageProvider languages.LanguageProvider
-    languageProvider = languages.NewJsonLanguageProvider("./configs/language.json")
-
-    var language languages.ProgrammingLanguage
-    language, err := languageProvider.GetLanguage(args.Lang)
+	var languageProvider languages.LanguageProvider
+    languageProvider, err := languages.NewJsonLanguageProvider("./configs/languages.json")
     if err != nil {
-        slog.Error("failed to get programming language", slog.String("error", err.Error()))
-        os.Exit(1)
+        slog.Error("failed to create language provider", slog.String("error", err.Error()))
     }
+
+	var language languages.ProgrammingLanguage
+	if args.Lang != "" {
+        var err error
+		language, err = languageProvider.GetLanguage(args.Lang)
+		if err != nil {
+			slog.Error("failed to get programming language", slog.String("error", err.Error()))
+			os.Exit(1)
+		}
+	} else if args.Filename != "" {
+        var err error
+        extension := filepath.Ext(args.Filename)
+        language, err = languageProvider.FindByFileExtension(extension)
+        if err != nil {
+            slog.Error("failed to get programming language", slog.String("error", err.Error()))
+            os.Exit(1)
+        }
+    } else {
+        slog.Error("no language provided")
+    }
+
+    slog.Info("found language", slog.String("language", fmt.Sprintf("%+v", language)))
 
 	isolate, err := isolate.NewIsolate()
 	if err != nil {
@@ -105,14 +108,23 @@ func main() {
 		os.Exit(1)
 	}
 
-    box, err := isolate.NewBox()
-    box.Id()
-    slog.Info("created box", slog.Int("id", box.Id()))
+	box, err := isolate.NewBox()
+	box.Id()
+	slog.Info("created box", slog.Int("id", box.Id()))
 
-    // place the code file in the box
-    err = box.AddFile(language.CodeFilename, []byte(args.Code))
-    if err != nil {
-        slog.Error("failed to add code file to box", slog.String("error", err.Error()))
-        os.Exit(1)
-    }
+	// place the code file in the box
+	err = box.AddFile(language.CodeFilename, []byte(args.Code))
+	if err != nil {
+		slog.Error("failed to add code file to box", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+}
+
+func readFile(path string) []byte {
+	content, err := os.ReadFile(path)
+	if err != nil {
+		slog.Error("failed to read file", slog.String("error", err.Error()))
+		os.Exit(1)
+	}
+	return content
 }

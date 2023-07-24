@@ -5,6 +5,8 @@ import (
 	"errors"
 	"os"
 	"path/filepath"
+
+	"golang.org/x/exp/slog"
 )
 
 type LanguageProvider interface {
@@ -23,11 +25,14 @@ type JsonLanguageProvider struct {
 	jsonPath string
 }
 
-func NewJsonLanguageProvider(jsonPath string) *JsonLanguageProvider {
+func NewJsonLanguageProvider(jsonPath string) (*JsonLanguageProvider, error) {
     var result = new(JsonLanguageProvider)
     result.jsonPath = jsonPath
-    result.Sync()
-    return result
+    err := result.Sync()
+    if err != nil {
+        return nil, err
+    }
+    return result, nil
 }
 
 func (provider *JsonLanguageProvider) Sync() error {
@@ -60,6 +65,7 @@ func (base *LanguageProviderBase) GetLanguages() ([]ProgrammingLanguage, error) 
 }
 
 func (base *LanguageProviderBase) FindByFileExtension(extension string) (ProgrammingLanguage, error) {
+    slog.Info("finding language by extension", slog.String("extension", extension))
 	var results []ProgrammingLanguage
 	for _, language := range base.languages {
 		langExtension := filepath.Ext(language.CodeFilename)
@@ -67,6 +73,7 @@ func (base *LanguageProviderBase) FindByFileExtension(extension string) (Program
 			results = append(results, language)
 		}
 	}
+    slog.Info("found languages", slog.Int("count", len(results)))
 	if len(results) == 1 {
 		return results[0], nil
 	}

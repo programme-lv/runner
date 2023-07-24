@@ -1,32 +1,5 @@
 [
-    {
-        "id": "cpp17",
-        "full_name": "C++17 (GNU G++)",
-        "code_filename": "main.cpp",
-        "compile_cmd": "g++ -std=c++17 -o main main.cpp",
-        "execute_cmd": "./main",
-        "env_version_cmd": "g++ --version",
-        "hello_world_code": "#include <iostream>\nint main() { std::cout << \"Hello, World!\"; }",
-        "monaco_id": "cpp"
-    },
-    {
-        "id": "python3.10",
-        "full_name": "Python 3.10",
-        "code_filename": "main.py",
-        "compile_cmd": null,
-        "execute_cmd": "python3.10 main.py",
-        "env_version_cmd": "python3.10 --version",
-        "hello_world_code": "print(\"Hello, World!\")",
-        "monaco_id": "python"
-    },
-    {
-        "id": "java18",
-        "full_name": "Java 18",
-        "code_filename": "Main.java",
-        "compile_cmd": "javac Main.java",
-        "execute_cmd": "java Main",
-        "env_version_cmd": "java --version",
-        "hello_world_code": "public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}",
-        "monaco_id": "java"
-    }
-]
+  {"id":"cpp17","full_name":"C++17 (GNU G++)","code_filename":"main.cpp","compile_cmd":"g++ -std=c++17 -o main main.cpp","execute_cmd":"./main","env_version_cmd":"g++ --version","hello_world_code":"#include <iostream>\nint main() { std::cout << \"Hello, World!\"; }","monaco_id":"cpp"},
+  {"id":"python3.10","full_name":"Python 3.10","code_filename":"main.py","compile_cmd":null,"execute_cmd":"python3.10 main.py","env_version_cmd":"python3.10 --version","hello_world_code":"print(\"Hello, World!\")","monaco_id":"python"},
+  {"id":"java18","full_name":"Java 18","code_filename":"Main.java","compile_cmd":"javac Main.java","execute_cmd":"java Main","env_version_cmd":"java --version","hello_world_code":"public class Main {\n    public static void main(String[] args) {\n        System.out.println(\"Hello, World!\");\n    }\n}","monaco_id":"java"},
+  {"id":"go1.19","full_name":"Go 1.19","code_filename":"main.go","compile_cmd":"go build main.go","execute_cmd":"./main","env_version_cmd":"go version","hello_world_code":"package main\nimport \"fmt\"\nfunc main() {\n    fmt.Println(\"Hello, World!\")\n}","monaco_id":"go"}]
