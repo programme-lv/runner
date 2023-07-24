@@ -121,6 +121,7 @@ func main() {
 	}
 
 	if language.CompileCmd != nil {
+        slog.Info("compiling code")
 		stdin := io.NopCloser(strings.NewReader(args.Stdin))
 		process, err := box.Run(*language.CompileCmd, stdin, nil)
 		if err != nil {
@@ -134,6 +135,21 @@ func main() {
             os.Exit(1)
         }
 	}
+
+    slog.Info("running code")
+
+    stdin := io.NopCloser(strings.NewReader(args.Stdin))
+    process, err := box.Run(language.ExecuteCmd, stdin, nil)
+    if err != nil {
+        slog.Error("failed to run code", slog.String("error", err.Error()))
+        os.Exit(1)
+    }
+    process.LogOutput()
+    err = process.Wait()
+    if err != nil {
+        slog.Error("failed to run code", slog.String("error", err.Error()))
+        os.Exit(1)
+    }
 }
 
 func readFile(path string) []byte {
