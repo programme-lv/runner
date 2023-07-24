@@ -21,7 +21,7 @@ func DefaultRuntimeConstraints() RuntimeConstraints {
     }
 }
 
-func (constraints *RuntimeConstraints) AllIsolateArgs() []string {
+func (constraints *RuntimeConstraints) ToArgs() []string {
     return []string{
         constraints.MemLimArg(),
         constraints.CpuTimeLimArg(),

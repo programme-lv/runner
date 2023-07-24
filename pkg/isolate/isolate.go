@@ -94,12 +94,9 @@ func (isolate *Isolate) EraseBox(boxId int) error {
 }
 
 func (isolate *Isolate) RunCommand(
-	boxId int,
-	command string,
-	constraints RuntimeConstraints,
-	stdin io.ReadCloser,
-	stdout io.WriteCloser,
-	stderr io.WriteCloser) (cmd *exec.Cmd, err error) {
+	boxId int, command string,
+	stdin io.ReadCloser, stdout io.WriteCloser, stderr io.WriteCloser,
+	constraints RuntimeConstraints) (cmd *exec.Cmd, err error) {
 
 	runCmdStr := fmt.Sprintf("isolate --box-id %d --run %s",
 		boxId,
