@@ -6,7 +6,9 @@ import (
 	"io"
 	"os"
 	"os/exec"
-    "log"
+	"strings"
+
+	"golang.org/x/exp/slog"
 )
 
 /*
@@ -43,15 +45,15 @@ message:Time limit exceeded
 */
 
 type IsolateMetrics struct {
-    timeSec float64
-    timeWallSec float64
-    maxRssKb int
-    cswVoluntary int
-    cswForced int
-    cgMemKb int
-    exitCode int
-    status string
-    message string
+    TimeSec float64
+    TimeWallSec float64
+    MaxRssKb int64
+    CswVoluntary int64
+    CswForced int64
+    CgMemKb int64
+    ExitCode int64
+    Status string
+    Message string
 }
 
 type IsolateProcess struct {
@@ -61,19 +63,75 @@ type IsolateProcess struct {
 	metaFilePath string
 }
 
-func (process *IsolateProcess) Wait() error {
+func (process *IsolateProcess) Wait() (*IsolateMetrics, error) {
 	err := process.cmd.Wait()
 	if err != nil {
-		return err
+		return nil, err
 	}
     // read metaFilePaht
     content, err := os.ReadFile(process.metaFilePath)
     if err != nil {
-        return err
+        return nil, err
     }
+   
+    slog.Info("meta file content", slog.String("content", string(content)))
+
+    // parse metrics
+    lines := strings.Split(string(content), "\n")
+    metrics := &IsolateMetrics{}
+
+    for _, line := range lines {
+        if line == "" {
+            continue
+        }
+
+        parts := strings.Split(line, ":")
+        if len(parts) != 2 {
+            slog.Info("invalid meta file line", slog.String("line", line))
+            return nil, fmt.Errorf("invalid meta file line: %s", line)
+        }
+        
+        key := parts[0]
+        value := parts[1]
+
+        switch key {
+        case "time":
+            fmt.Sscanf(value, "%f", &metrics.TimeSec)
+        case "time-wall":
+            fmt.Sscanf(value, "%f", &metrics.TimeWallSec)
+        case "max-rss":
+            fmt.Sscanf(value, "%d", &metrics.MaxRssKb)
+        case "csw-voluntary":
+            fmt.Sscanf(value, "%d", &metrics.CswVoluntary)
+        case "csw-forced":
+            fmt.Sscanf(value, "%d", &metrics.CswForced)
+        case "cg-mem":
+            fmt.Sscanf(value, "%d", &metrics.CgMemKb)
+        case "exitcode":
+            fmt.Sscanf(value, "%d", &metrics.ExitCode)
+        case "status":
+            metrics.Status = value
+        case "message":
+            metrics.Message = value
+        case "":
+            // ignore
+        default:
+            slog.Info("unknown meta file line", slog.String("line", line))
+        }
+    }
+
+    slog.Info("metrics",
+        slog.Float64("time", metrics.TimeSec),
+        slog.Float64("time-wall", metrics.TimeWallSec),
+        slog.Int64("max-rss", metrics.MaxRssKb),
+        slog.Int64("csw-voluntary", metrics.CswVoluntary),
+        slog.Int64("csw-forced", metrics.CswForced),
+        slog.Int64("cg-mem", metrics.CgMemKb),
+        slog.Int64("exitcode", metrics.ExitCode),
+        slog.String("status", metrics.Status),
+        slog.String("message", metrics.Message))
     
-    log.Println(string(content))
-	return nil
+	return metrics, nil
 }
 
 func (process *IsolateProcess) LogOutput() {

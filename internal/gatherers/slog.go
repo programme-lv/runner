@@ -17,12 +17,12 @@ func (g *SlogGatherer) SetCompilationOutput(stdout string, stderr string) {
 
 func (g *SlogGatherer) FinishCompilationMetrics(
 	cpuTimeSec float64, wallTimeSec float64,
-	memoryKb int64, exitCode int) {
+	memoryKb int64, exitCode int64) {
 	slog.Info("compilation metrics",
 		slog.Float64("cpu_time_sec", cpuTimeSec),
 		slog.Float64("wall_time_sec", wallTimeSec),
 		slog.Int64("memory_kb", memoryKb),
-		slog.Int("exit_code", exitCode))
+		slog.Int64("exit_code", exitCode))
 }
 
 func (g *SlogGatherer) AppendExecutionOutput(stdout string, stderr string) {
@@ -33,12 +33,12 @@ func (g *SlogGatherer) AppendExecutionOutput(stdout string, stderr string) {
 
 func (g *SlogGatherer) FinishExecutionMetrics(
     cpuTimeSec float64, wallTimeSec float64,
-    memoryKb int64, exitCode int) {
+    memoryKb int64, exitCode int64) {
     slog.Info("execution metrics",
         slog.Float64("cpu_time_sec", cpuTimeSec),
         slog.Float64("wall_time_sec", wallTimeSec),
         slog.Int64("memory_kb", memoryKb),
-        slog.Int("exit_code", exitCode))
+        slog.Int64("exit_code", exitCode))
 }
 
 func (g *SlogGatherer) FinishWithError(err string) {

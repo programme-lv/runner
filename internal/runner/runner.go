@@ -1,8 +1,10 @@
 package runner
 
 import (
+	"bufio"
 	"io"
 	"strings"
+	"sync"
 
 	"github.com/programme-lv/runner/internal/gatherers"
 	"github.com/programme-lv/runner/internal/languages"
@@ -78,7 +80,7 @@ func (r *Runner) Run(code string, language Language, stdin string) {
 
         r.gatherer.SetCompilationOutput(string(stdout), string(stderr))
 
-        err = process.Wait() // TODO: report metrics
+        metrics, err := process.Wait()
 
 		if err != nil {
             logger = logger.With(slog.String("error", err.Error()))
@@ -87,6 +89,13 @@ func (r *Runner) Run(code string, language Language, stdin string) {
             r.gatherer.FinishWithError(errMsg)
 			return
 		}
+
+        r.gatherer.FinishCompilationMetrics(
+            metrics.TimeSec,
+            metrics.TimeWallSec,
+            metrics.CgMemKb,
+            metrics.ExitCode,
+        )
 	}
 
 	logger.Info("running code")
@@ -101,8 +110,30 @@ func (r *Runner) Run(code string, language Language, stdin string) {
 		return
 	}
 
-    // process.LogOutput() // TODO: replace by logging to gatherer
-	err = process.Wait()
+    stdoutStream := process.Stdout()
+    stderrStream := process.Stderr()
+
+    stdoutScanner := bufio.NewScanner(stdoutStream)
+    stderrScanner := bufio.NewScanner(stderrStream)
+
+    var wg sync.WaitGroup
+    wg.Add(2)
+
+    go func() {
+        defer wg.Done()
+        for stdoutScanner.Scan() {
+            r.gatherer.AppendExecutionOutput(stdoutScanner.Text(), "")
+        }
+    }()
+
+    go func() {
+        defer wg.Done()
+        for stderrScanner.Scan() {
+            r.gatherer.AppendExecutionOutput("", stderrScanner.Text())
+        }
+    }()
+
+    metrics, err := process.Wait()
 	if err != nil {
         logger = logger.With(slog.String("error", err.Error()))
         errMsg := "failed to run code"
@@ -110,4 +141,11 @@ func (r *Runner) Run(code string, language Language, stdin string) {
         r.gatherer.FinishWithError(errMsg)
 		return
 	}
+
+    r.gatherer.FinishExecutionMetrics(
+        metrics.TimeSec,
+        metrics.TimeWallSec,
+        metrics.CgMemKb,
+        metrics.ExitCode,
+    )
 }
