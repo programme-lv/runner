@@ -8,7 +8,10 @@ import (
 	"time"
 
 	"github.com/lmittmann/tint"
+	"github.com/programme-lv/runner/internal/gatherers"
 	"github.com/programme-lv/runner/internal/languages"
+	"github.com/programme-lv/runner/internal/runner"
+	"github.com/programme-lv/runner/pkg/isolate"
 	"golang.org/x/exp/slog"
 )
 
@@ -76,6 +79,7 @@ func main() {
 	languageProvider, err := languages.NewJsonLanguageProvider("./configs/languages.json")
 	if err != nil {
 		slog.Error("failed to create language provider", slog.String("error", err.Error()))
+        return
 	}
 
 	var language languages.ProgrammingLanguage
@@ -84,7 +88,7 @@ func main() {
 		language, err = languageProvider.GetLanguage(args.Lang)
 		if err != nil {
 			slog.Error("failed to get programming language", slog.String("error", err.Error()))
-			os.Exit(1)
+            return
 		}
 	} else if args.Filename != "" {
 		var err error
@@ -92,14 +96,26 @@ func main() {
 		language, err = languageProvider.FindByFileExtension(extension)
 		if err != nil {
 			slog.Error("failed to get programming language", slog.String("error", err.Error()))
-			os.Exit(1)
+            return
 		}
 	} else {
 		slog.Error("no language provided")
+        return
 	}
 
 	slog.Info("found language", slog.String("language", fmt.Sprintf("%+v", language)))
-	
+
+    gatherer := gatherers.NewSlogGatherer()
+    isolate, err := isolate.NewIsolate()
+    if err != nil {
+        slog.Error("failed to create isolate", slog.String("error", err.Error()))
+        return
+    }
+
+    runner := runner.NewRunner(gatherer, isolate)
+    runner.Run(args.Code, language, args.Stdin)
+
+    slog.Info("finished running")
 }
 
 func readFile(path string) []byte {

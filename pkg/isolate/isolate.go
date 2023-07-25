@@ -3,7 +3,10 @@ package isolate
 import (
 	"fmt"
 	"io"
+	"io/ioutil"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"sync"
 
@@ -106,11 +109,28 @@ func (isolate *Isolate) StartCommand(
     var process *IsolateProcess = &IsolateProcess{}
     var err error
 
-	runCmdStr := fmt.Sprintf("isolate --cg --box-id %d %s %s --run /usr/bin/env %s",
-		boxId,
-        strings.Join(constraints.ToArgs(), " "),
-        "--env=HOME=/box",
-		command)
+    tempDir := filepath.Join(os.TempDir(), "isolate")
+    err = os.MkdirAll(tempDir, 0755)
+    if err != nil {
+        slog.Error("error creating temp dir", slog.String("error", err.Error()))
+        os.Exit(1)
+    }
+
+    file, err := ioutil.TempFile(tempDir, "runner.*.txt")
+    if err != nil {
+        slog.Error("error creating temp file", slog.String("error", err.Error()))
+        os.Exit(1)
+    }
+    file.Close()
+
+    tempFilePath := file.Name()
+    process.metaFilePath = tempFilePath
+
+    runCmdArgs := []string{"--env=HOME=/box", "--meta="+tempFilePath}
+    runCmdArgs = append(runCmdArgs, constraints.ToArgs()...)
+
+	runCmdStr := fmt.Sprintf("isolate --cg --box-id %d %s --run /usr/bin/env %s",
+		boxId, strings.Join(runCmdArgs, " "), command)
 
     logger := slog.With(slog.Int("box-id", boxId),
                         slog.String("cmd", runCmdStr))
