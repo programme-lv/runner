@@ -10,6 +10,20 @@ or retrieve jobs from a RabbitMQ queue and stream back the results.
 Note that this is not the module that evaluates user submissions.
 See [tester](https://github.com/programme-lv/tester).
 
+## Requirements
+
+To sandbox the code execution the runner uses `isolate` tool.
+It is required during runtime.
+See [isolate](https://github.com/ioi/isolate).
+
+After installing `isolate` the following commands should be available:
+- `isolate --cg --init`;
+- `isolate --cg --run /usr/bin/env pwd`;
+
+Isolate also provides the `isolate-check-environment` utility.
+
+Compilation of the project requires `go` to be installed.
+
 ## Command line usage
 
 When in root of the repository, run:
@@ -71,18 +85,33 @@ before each run. Database connection string is configured through
 
 ## OOP architecture
 
-`Runner` itself is a class that takes in a `Gatherer` and an `Executable`.
+`Runner` itself is a class that takes in:
+- a `Gatherer` interface;
+- an `Isolate` instance;
+- `code` string;
+- programming language;
+- `stdin` string.
 
-### `Executable`
+To compile and execute the code in question `Runner` creates
+an `IsolateBox` using the `Isolate` instance.
 
-`Executable` is an interface that has the methods `run` and `stop`.
+After compilation and during execution `Runner` reports
+output, metrics and error to gatherer.
 
-`run` method params:
+### `IsolateBox` and `IsolateProcess`
+
+`Run` method params:
 - cpu time limit;
 - memory limit;
 - stdin stream.
 
-`run` method returns information about the execution, i.e.,:
+THe `Run` method returns an `IsolateProcess` pointer.
+
+The pointer can be used to call a method that awaits the finish
+of the execution and returns runtime metrics as well as providing
+stdout and stderr streams.
+
+Metrics provided by the `IsolateProcess`:
 - total memory use in kilobytes by the control group;
 - whether the program was killed by the out-of-memory killer;
 - number of context switches forced by the kernel;
@@ -101,15 +130,15 @@ before each run. Database connection string is configured through
 - wall clock time of the program in fractional seconds.
 
 
-### `Gatherer`
+### `Gatherer` interface
 
 `Gatherer` collects feedback and streams it back to the user be it through
-the command line or through websockets.
+the command line or through websockets or anything else.
 
-## Roadmap
-
-- implement ioi `isolate` interface;
-- placing code file in the compiler `IsolateEnvironment`;
-- create `IsolatedExecutable` class;
-- implement executing arbitrary code file.
+Currently `Gatherer` has the following methods:
+- SetCompilationOutput(stdout string, stderr string)
+- FinishCompilationMetrics(cpuTimeSec float64, wallTimeSec float64, memoryKb int64, exitCode int)
+- AppendExecutionOutput(stdout string, stderr string)
+- FinishExecutionMetrics(cpuTimeSec float64, wallTimeSec float64, memoryKb int64, exitCode int)
+- FinishWithError(err string)
 

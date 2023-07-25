@@ -29,17 +29,20 @@ type Gatherer interface {
 type Runner struct {
 	logger   *slog.Logger
 	gatherer Gatherer
+    isolate *isolate.Isolate
 }
 
-func NewRunner(gatherer Gatherer) *Runner {
+func NewRunner(gatherer Gatherer, isolate *isolate.Isolate) *Runner {
 	return &Runner{
 		logger: slog.Default(),
+        isolate: isolate,
 	}
 }
 
 func (r *Runner) Run(code string, language Language, stdin string) {
     logger := r.logger
 
+    /*
 	isolate, err := isolate.NewIsolate()
 	if err != nil {
         logger = logger.With(slog.String("error", err.Error()))
@@ -48,8 +51,9 @@ func (r *Runner) Run(code string, language Language, stdin string) {
 		r.gatherer.FinishWithError(errMsg)
 		return
 	}
+    */
 
-	box, err := isolate.NewBox()
+	box, err := r.isolate.NewBox()
     logger = logger.With(slog.Int("box", box.Id()))
 	logger.Info("created box")
 
